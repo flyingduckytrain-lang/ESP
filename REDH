@@ -1,0 +1,60 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Create a table to keep track of adornments
+local adornments = {}
+
+-- Function to create a white highlight for a character
+local function highlightCharacter(character)
+    -- Remove old adornments first
+    if adornments[character] then
+        for _, ad in pairs(adornments[character]) do
+            ad:Destroy()
+        end
+    end
+    adornments[character] = {}
+
+    -- Go through each part of the character
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Adornee = part
+            box.AlwaysOnTop = true  -- go through walls
+            box.ZIndex = 10
+            box.Size = part.Size
+            box.Color3 = Color3.fromRGB(255, 255, 255)
+            box.Transparency = 0.5
+            box.Parent = part
+            table.insert(adornments[character], box)
+        end
+    end
+end
+
+-- Highlight existing players
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Character then
+        highlightCharacter(player.Character)
+    end
+    -- Listen for character respawns
+    player.CharacterAdded:Connect(function(char)
+        highlightCharacter(char)
+    end)
+end
+
+-- Detect new players joining
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(char)
+        highlightCharacter(char)
+    end)
+end)
+
+-- Optional: keep the adornments updated in case part sizes change
+RunService.Heartbeat:Connect(function()
+    for character, boxes in pairs(adornments) do
+        for _, box in pairs(boxes) do
+            if box.Adornee then
+                box.Size = box.Adornee.Size
+            end
+        end
+    end
+end)
