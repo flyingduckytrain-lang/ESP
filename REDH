@@ -1,60 +1,44 @@
+-- Simple White ESP (Full Body Overlay)
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
--- Create a table to keep track of adornments
-local adornments = {}
-
--- Function to create a white highlight for a character
-local function highlightCharacter(character)
-    -- Remove old adornments first
-    if adornments[character] then
-        for _, ad in pairs(adornments[character]) do
-            ad:Destroy()
-        end
-    end
-    adornments[character] = {}
-
-    -- Go through each part of the character
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local box = Instance.new("BoxHandleAdornment")
-            box.Adornee = part
-            box.AlwaysOnTop = true  -- go through walls
-            box.ZIndex = 10
-            box.Size = part.Size
-            box.Color3 = Color3.fromRGB(255, 255, 255)
-            box.Transparency = 0.5
-            box.Parent = part
-            table.insert(adornments[character], box)
-        end
-    end
+local function addESP(character)
+    if not character then return end
+    
+    -- Avoid duplicate highlights
+    if character:FindFirstChild("ESPHighlight") then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESPHighlight"
+    highlight.FillColor = Color3.fromRGB(255, 255, 255) -- White fill
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- White outline
+    highlight.FillTransparency = 0.3 -- Slight transparency so you can see through
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- See through walls
+    
+    highlight.Parent = character
 end
 
--- Highlight existing players
-for _, player in pairs(Players:GetPlayers()) do
+local function setupPlayer(player)
+    if player == LocalPlayer then return end
+    
     if player.Character then
-        highlightCharacter(player.Character)
+        addESP(player.Character)
     end
-    -- Listen for character respawns
+    
     player.CharacterAdded:Connect(function(char)
-        highlightCharacter(char)
+        task.wait(0.5)
+        addESP(char)
     end)
 end
 
--- Detect new players joining
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(char)
-        highlightCharacter(char)
-    end)
-end)
+-- Apply to existing players
+for _, player in pairs(Players:GetPlayers()) do
+    setupPlayer(player)
+end
 
--- Optional: keep the adornments updated in case part sizes change
-RunService.Heartbeat:Connect(function()
-    for character, boxes in pairs(adornments) do
-        for _, box in pairs(boxes) do
-            if box.Adornee then
-                box.Size = box.Adornee.Size
-            end
-        end
-    end
+-- Apply to new players
+Players.PlayerAdded:Connect(function(player)
+    setupPlayer(player)
 end)
