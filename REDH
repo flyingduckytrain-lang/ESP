@@ -1,7 +1,7 @@
--- Simple White ESP (Full Body Overlay)
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local function addESP(character)
     if not character then return end
@@ -20,16 +20,82 @@ local function addESP(character)
     highlight.Parent = character
 end
 
+local function addNameTag(character, player)
+    if not character then return end
+    
+    -- Avoid duplicate name tags
+    if character:FindFirstChild("NameTagBillboard") then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Create Billboard GUI for name
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "NameTagBillboard"
+    billboard.Size = UDim2.new(4, 0, 2, 0)
+    billboard.StudsOffset = Vector3.new(0, 3, 0) -- Above the head
+    billboard.MaxDistance = 500 -- Distance before it disappears
+    billboard.Parent = humanoidRootPart
+    
+    -- Create TextLabel for name
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "NameLabel"
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Text = player.Name
+    textLabel.Parent = billboard
+    
+    -- Create Billboard GUI for distance
+    local distanceBillboard = Instance.new("BillboardGui")
+    distanceBillboard.Name = "DistanceBillboard"
+    distanceBillboard.Size = UDim2.new(4, 0, 2, 0)
+    distanceBillboard.StudsOffset = Vector3.new(0, -3, 0) -- Below the character
+    distanceBillboard.MaxDistance = 500
+    distanceBillboard.Parent = humanoidRootPart
+    
+    -- Create TextLabel for distance
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Name = "DistanceLabel"
+    distanceLabel.Size = UDim2.new(1, 0, 1, 0)
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    distanceLabel.TextScaled = true
+    distanceLabel.Font = Enum.Font.Gotham
+    distanceLabel.Parent = distanceBillboard
+    
+    -- Update distance every frame
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not character or not character.Parent or not humanoidRootPart or not humanoidRootPart.Parent then
+            connection:Disconnect()
+            return
+        end
+        
+        local localCharacter = LocalPlayer.Character
+        if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        local distance = (humanoidRootPart.Position - localCharacter.HumanoidRootPart.Position).Magnitude
+        distanceLabel.Text = string.format("%.1f studs", distance)
+    end)
+end
+
 local function setupPlayer(player)
     if player == LocalPlayer then return end
     
     if player.Character then
         addESP(player.Character)
+        addNameTag(player.Character, player)
     end
     
     player.CharacterAdded:Connect(function(char)
         task.wait(0.5)
         addESP(char)
+        addNameTag(char, player)
     end)
 end
 
